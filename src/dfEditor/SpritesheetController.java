@@ -883,9 +883,77 @@ public class SpritesheetController extends dfEditorPanel implements ImageModifie
         setModified(false);
         savedFile = aFile;
         
+        saveSpriteSheetImages(aFile, nameTree);
+        
         return true;
     }
     
+    ///
+    /// save eash of spritesheet's images.
+    ///
+    /// aFile is a spritesheet xml file which is about to be saved. 
+    /// aTree is passed by nameTree.
+    ///
+    public boolean saveSpriteSheetImages(File aFile, JTree aTree)
+    {
+        try
+        {
+            saveSpriteImage(aFile, "/", (CustomNode)aTree.getModel().getRoot());
+        }
+        catch (IOException e)
+        {
+            JOptionPane.showMessageDialog(
+                this,
+                "Could not save the spritesheet images!\n\n"+e.getMessage(),
+                "Spritesheet not saved",
+                JOptionPane.ERROR_MESSAGE);
+            {
+                return false;                
+            }            
+        }
+        
+        return true;
+    }
+    
+    ///
+    /// Save each of sprite image which is defined in the spritesheet xml file.
+    /// A sprite image file name is concatenatd category name and its name.
+    ///
+    private void saveSpriteImage(File aFile, String categoryName, CustomNode node) throws IOException
+    {
+        if (node.isLeaf())
+        {               
+            // specify sprite image file name.
+            String name = (String)node.getUserObject();
+            String absolutePath = aFile.getAbsolutePath();
+            String filePath = absolutePath.substring(0,absolutePath.lastIndexOf(File.separator));
+            String sprPath = filePath + categoryName + "_" + name + ".png";
+            java.io.File spriteImageFile = new File(sprPath);
+            
+            BufferedImage originalImage = viewPanel.getImage();
+
+            // retrieves image rect
+            java.awt.Rectangle r = ((GraphicObject)node.getCustomObject()).getRect();            
+            Rectangle[] rectArray = new Rectangle[1];
+            rectArray[0] = new Rectangle();
+            rectArray[0].x = r.x;
+            rectArray[0].y = r.y;
+            rectArray[0].width = r.width;
+            rectArray[0].height = r.height;
+            
+            PixelPacker pixelPakcer = new PixelPacker();
+            BufferedImage sprImage = pixelPakcer.packPixels(originalImage, rectArray, false);
+
+            ImageIO.write(sprImage, "png", spriteImageFile);
+        }
+        else
+        {   
+            for (int i=0; i<node.getChildCount(); ++i)
+            {
+                saveSpriteImage(aFile, (String)node.getUserObject(), (CustomNode)node.getChildAt(i));
+            }
+        }
+    }    
 
     public boolean saveCoordsAs()
     {
@@ -1157,6 +1225,8 @@ public class SpritesheetController extends dfEditorPanel implements ImageModifie
 
         viewPanel.repaint();
     }
+    
+    
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
